@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Search, Banknote, Printer, Mic } from 'lucide-react';
 import { db } from '@/lib/db';
 import type { Product, Order } from '@/types';
@@ -10,58 +10,99 @@ import { AdditionalCharge, BillingItem } from '@/types/Billingtypes';
 export default function Billing() {
   const [products, setProducts] = useState<(Product & { category_name: string })[]>([]);
   const [search, setSearch] = useState('');
-  const [mode, setMode] = useState<'Cash' | 'Credit' | 'Credit Card' | 'Finance'>('Cash');
-  const [acName, setAcName] = useState('');
-  const [town, setTown] = useState('');
-  const [phone, setPhone] = useState('');
-  const [billDate, setBillDate] = useState(new Date().toISOString().split('T')[0]);
-  const [billNumber, setBillNumber] = useState('');
-  const [items, setItems] = useState<BillingItem[]>([]);
-  const [additionalCharges, setAdditionalCharges] = useState<AdditionalCharge[]>([]);
-  const [tender, setTender] = useState(0);
+  const [mode, setMode] = useState<'Cash' | 'Credit' | 'Credit Card' | 'Finance'>(() => {
+    const saved = sessionStorage.getItem('billing_mode');
+    return saved ? JSON.parse(saved) : 'Cash';
+  });
+  const [acName, setAcName] = useState(() => sessionStorage.getItem('billing_acName') || '');
+  const [town, setTown] = useState(() => sessionStorage.getItem('billing_town') || '');
+  const [phone, setPhone] = useState(() => sessionStorage.getItem('billing_phone') || '');
+  const [billDate, setBillDate] = useState(() => sessionStorage.getItem('billing_billDate') || new Date().toISOString().split('T')[0]);
+  const [billNumber, setBillNumber] = useState(() => sessionStorage.getItem('billing_billNumber') || '');
+  const [items, setItems] = useState<BillingItem[]>(() => {
+    const saved = sessionStorage.getItem('billing_items');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [additionalCharges, setAdditionalCharges] = useState<AdditionalCharge[]>(() => {
+    const saved = sessionStorage.getItem('billing_additionalCharges');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [tender, setTender] = useState(() => {
+    const saved = sessionStorage.getItem('billing_tender');
+    return saved ? parseFloat(saved) : 0;
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('billing_mode', JSON.stringify(mode));
+    sessionStorage.setItem('billing_acName', acName);
+    sessionStorage.setItem('billing_town', town);
+    sessionStorage.setItem('billing_phone', phone);
+    sessionStorage.setItem('billing_billDate', billDate);
+    sessionStorage.setItem('billing_billNumber', billNumber);
+    sessionStorage.setItem('billing_items', JSON.stringify(items));
+    sessionStorage.setItem('billing_additionalCharges', JSON.stringify(additionalCharges));
+    sessionStorage.setItem('billing_tender', tender.toString());
+  }, [mode, acName, town, phone, billDate, billNumber, items, additionalCharges, tender]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [printOrder, setPrintOrder] = useState<(Order & { items: (import('@/types').OrderItem & { hsn_code?: string; mrp?: number })[] }) | null>(null);
   const [storeSettings, setStoreSettings] = useState<Record<string, string>>({});
   const [savedMessage, setSavedMessage] = useState(false);
   const [codeSearch, setCodeSearch] = useState('');
-  const [isListening, setIsListening] = useState(false);
-
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const SpeechRecognition =
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
   useEffect(() => {
     db.products.getAll().then(setProducts);
     db.store.getSettings().then(setStoreSettings);
   }, []);
 
-  const startVoiceSearch = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setError('Voice search is not supported in this browser.');
-      setTimeout(() => setError(''), 3000);
+  // Auto-scroll to bottom of table when new items are added
+  useEffect(() => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = tableContainerRef.current.scrollHeight;
+    }
+  }, [items.length]);
+
+  const toggleVoiceSearch = () => {
+    if (listening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setListening(false);
       return;
     }
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition not supported in this browser");
+      return;
+    }
 
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = (event: any) => {
-      if (event.error === 'network') {
-        setError('Voice search unavailable: Desktop apps & privacy browsers natively block speech recognition.');
-      } else {
-        setError(`Voice search error: ${event.error}`);
-      }
-      setIsListening(false);
-      setTimeout(() => setError(''), 4000);
-    };
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-IN"; // Indian English
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
       setSearch(transcript);
     };
 
+    recognition.onerror = () => {
+      setListening(false);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
     recognition.start();
+    recognitionRef.current = recognition;
+    setListening(true);
   };
 
   const filtered = products.filter(
@@ -234,8 +275,8 @@ export default function Billing() {
             />
             <button
               type="button"
-              onClick={startVoiceSearch}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-colors z-10 ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-slate-400 hover:text-primary-400 hover:bg-slate-700/50'}`}
+              onClick={toggleVoiceSearch}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-colors z-10 ${listening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-slate-400 hover:text-primary-400 hover:bg-slate-700/50'}`}
               title="Voice Search"
             >
               <Mic size={15} />
@@ -352,10 +393,10 @@ export default function Billing() {
 
 
       {/* Item Billing Table */}
-      <div className="rounded-xl border border-slate-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-800/80 text-slate-400 border-b border-slate-700">
+      <div className="rounded-xl border border-slate-700 overflow-hidden bg-slate-900/50">
+        <div className="overflow-auto max-h-[260px]" ref={tableContainerRef}>
+          <table className="w-full text-sm relative">
+            <thead className="bg-slate-800/95 text-slate-400 border-b border-slate-700 sticky top-0 z-20 backdrop-blur-sm shadow-sm">
               <tr className="divide-x divide-slate-700">
                 <th className="text-left px-2 py-2 font-medium w-10">SNo</th>
                 <th className="text-left px-2 py-2 font-medium w-16">Code</th>
@@ -476,7 +517,7 @@ export default function Billing() {
               })}
             </tbody>
             {items.length > 0 && (
-              <tfoot className="bg-slate-800/60 border-t-2 border-slate-600">
+              <tfoot className="bg-slate-800/95 border-t-2 border-slate-600 sticky bottom-0 z-20 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.2)]">
                 <tr className="text-slate-200 font-medium divide-x divide-slate-700">
                   <td colSpan={4} className="px-2 py-2">
                     Totals ({netTotal.toFixed(2)})

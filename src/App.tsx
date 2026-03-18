@@ -11,10 +11,10 @@ import Dashboard from '@/pages/Dashboard';
 import LowStockAlert from '@/components/LowStockAlert';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/', icon: FileText, label: 'Billing' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/products', icon: Package, label: 'Products' },
   { to: '/categories', icon: FolderTree, label: 'Categories' },
-  { to: '/billing', icon: FileText, label: 'Billing' },
   { to: '/orders', icon: ShoppingCart, label: 'Orders' },
   { to: '/customers', icon: Users, label: 'Customers' },
   { to: '/tax', icon: Receipt, label: 'Tax' },
@@ -53,10 +53,10 @@ export default function App() {
           <LowStockAlert />
           <div className="flex-1 overflow-auto p-6">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Billing />} />
               <Route path="/products" element={<Products />} />
               <Route path="/categories" element={<Categories />} />
-              <Route path="/billing" element={<Billing />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/tax" element={<Tax />} />
