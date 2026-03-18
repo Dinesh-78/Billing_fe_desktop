@@ -414,7 +414,7 @@ export default function Billing() {
               {items.map((item, idx) => {
                 const amount = item.quantity * item.rate;
                 const gstAmt = amount * (item.product.gst_rate / 100);
-                const netAmt = amount + gstAmt;
+                const netAmt = amount;
                 return (
                   <tr key={item.product.id} className="hover:bg-slate-800/40 divide-x divide-slate-700">
                     <td className="px-2 py-2 text-slate-400 border-b border-slate-700/50">{idx + 1}</td>

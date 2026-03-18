@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, session } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -34,6 +34,20 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Grant microphone permission so SpeechRecognition works in the renderer
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission === 'media') {
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
+
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+    if (permission === 'media') return true;
+    return false;
   });
 }
 
@@ -93,7 +107,7 @@ function registerIpcHandlers() {
     const pdfPath = path.join(saveDir, safeName);
     const pdfBuffer = await printWindow.webContents.printToPDF({
       printBackground: true,
-      margin: { top: 10, bottom: 10, left: 10, right: 10 },
+      margins: { top: 10, bottom: 10, left: 10, right: 10 },
     });
     printWindow.close();
     if (!fs.existsSync(saveDir)) fs.mkdirSync(saveDir, { recursive: true });

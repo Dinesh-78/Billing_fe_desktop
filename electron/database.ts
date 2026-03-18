@@ -161,12 +161,36 @@ export class DatabaseService {
         state_code TEXT NOT NULL DEFAULT '',
         cgst_rate REAL NOT NULL DEFAULT 0,
         sgst_rate REAL NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        UNIQUE(country_code, state_code)
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
 
       INSERT OR IGNORE INTO categories (id, name, country_code, state_code) VALUES (1, 'Uncategorized', 'IN', '');
     `);
+
+    this.runMigrations();
+  }
+
+  private runMigrations(): void {
+    // Migration: remove UNIQUE constraint from taxes table if it still exists
+    const tableInfo = this.db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='taxes'`).get() as { sql: string } | undefined;
+    if (tableInfo && tableInfo.sql.includes('UNIQUE(country_code, state_code)')) {
+      this.db.exec(`
+        BEGIN TRANSACTION;
+        ALTER TABLE taxes RENAME TO taxes_old;
+        CREATE TABLE taxes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          country_code TEXT NOT NULL DEFAULT 'IN',
+          state_code TEXT NOT NULL DEFAULT '',
+          cgst_rate REAL NOT NULL DEFAULT 0,
+          sgst_rate REAL NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO taxes (id, country_code, state_code, cgst_rate, sgst_rate, created_at)
+          SELECT id, country_code, state_code, cgst_rate, sgst_rate, created_at FROM taxes_old;
+        DROP TABLE taxes_old;
+        COMMIT;
+      `);
+    }
   }
 
   // Categories

@@ -99,33 +99,35 @@ export default function Tax() {
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label>Country Code <span className="text-red-400">*</span></label>
+          <label className="block text-sm text-slate-400 mb-1">Country Code <span className="text-red-400">*</span></label>
           <select
             value={form.country_code}
             onChange={(e) => update("country_code", e.target.value)}
+            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
           >
             {COUNTRY_CODES.map((cc) => (
-              <option key={cc} value={cc}>
+              <option key={cc} value={cc} className="bg-slate-800 text-slate-100">
                 {cc}
               </option>
             ))}
           </select>
         </div>
         <div>
-          <label>State Code <span className="text-red-400">*</span></label>
+          <label className="block text-sm text-slate-400 mb-1">State Code <span className="text-red-400">*</span></label>
           <select
             value={form.state_code}
             onChange={(e) => update("state_code", e.target.value)}
+            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
           >
-            <option value="">—</option>
+            <option value="" className="bg-slate-800 text-slate-500">— Select State —</option>
             {form.country_code === "IN" &&
               INDIAN_STATES.map((st) => (
-                <option key={st} value={st}>
+                <option key={st} value={st} className="bg-slate-800 text-slate-100">
                   {st}
                 </option>
               ))}
             {form.country_code !== "IN" && (
-              <option value={form.state_code || ""}>
+              <option value={form.state_code || ""} className="bg-slate-800 text-slate-100">
                 {form.state_code || "Custom"}
               </option>
             )}
@@ -133,43 +135,52 @@ export default function Tax() {
         </div>
       </div>
       <div>
-        <label>GST Rate (%) <span className="text-red-400">*</span></label>
+        <label className="block text-sm text-slate-400 mb-1">GST Rate (%) <span className="text-red-400">*</span></label>
         <input
-          type="number"
-          step="0.01"
-          min="0"
-          max="100"
+          type="text"
+          inputMode="decimal"
+          pattern="[0-9]*\.?[0-9]*"
           value={gstValue || ""}
-          onChange={(e) => updateGst(parseFloat(e.target.value) || 0)}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '' || /^\d*\.?\d*$/.test(val)) updateGst(parseFloat(val) || 0);
+          }}
           placeholder="e.g. 5 (splits into CGST 2.5% + SGST 2.5%)"
+          className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
         />
         <p className="text-xs text-slate-500 mt-1">
           Split equally into CGST and SGST
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label>CGST Rate (%) <span className="text-red-400">*</span></label>
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          max="100"
-          value={form.cgst_rate || ""}
-          onChange={(e) => update("cgst_rate", parseFloat(e.target.value) || 0)}
-        />
-      </div>
-      <div>
-        <label>SGST Rate (%) <span className="text-red-400">*</span></label>
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          max="100"
-          value={form.sgst_rate || ""}
-          onChange={(e) => update("sgst_rate", parseFloat(e.target.value) || 0)}
-        />
-      </div>
+        <div>
+          <label className="block text-sm text-slate-400 mb-1">CGST Rate (%) <span className="text-red-400">*</span></label>
+          <input
+            type="text"
+            inputMode="decimal"
+            pattern="[0-9]*\.?[0-9]*"
+            value={form.cgst_rate || ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || /^\d*\.?\d*$/.test(val)) update("cgst_rate", parseFloat(val) || 0);
+            }}
+            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-slate-400 mb-1">SGST Rate (%) <span className="text-red-400">*</span></label>
+          <input
+            type="text"
+            inputMode="decimal"
+            pattern="[0-9]*\.?[0-9]*"
+            value={form.sgst_rate || ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || /^\d*\.?\d*$/.test(val)) update("sgst_rate", parseFloat(val) || 0);
+            }}
+            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
+          />
+        </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
