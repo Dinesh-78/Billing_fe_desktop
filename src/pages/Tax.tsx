@@ -90,120 +90,6 @@ export default function Tax() {
     load();
   };
 
-  const TaxForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-          {error}
-        </div>
-      )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-slate-400 mb-1">Country Code <span className="text-red-400">*</span></label>
-          <select
-            value={form.country_code}
-            onChange={(e) => update("country_code", e.target.value)}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
-          >
-            {COUNTRY_CODES.map((cc) => (
-              <option key={cc} value={cc} className="bg-slate-800 text-slate-100">
-                {cc}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-slate-400 mb-1">State Code <span className="text-red-400">*</span></label>
-          <select
-            value={form.state_code}
-            onChange={(e) => update("state_code", e.target.value)}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
-          >
-            <option value="" className="bg-slate-800 text-slate-500">— Select State —</option>
-            {form.country_code === "IN" &&
-              INDIAN_STATES.map((st) => (
-                <option key={st} value={st} className="bg-slate-800 text-slate-100">
-                  {st}
-                </option>
-              ))}
-            {form.country_code !== "IN" && (
-              <option value={form.state_code || ""} className="bg-slate-800 text-slate-100">
-                {form.state_code || "Custom"}
-              </option>
-            )}
-          </select>
-        </div>
-      </div>
-      <div>
-        <label className="block text-sm text-slate-400 mb-1">GST Rate (%) <span className="text-red-400">*</span></label>
-        <input
-          type="text"
-          inputMode="decimal"
-          pattern="[0-9]*\.?[0-9]*"
-          value={gstValue || ""}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (val === '' || /^\d*\.?\d*$/.test(val)) updateGst(parseFloat(val) || 0);
-          }}
-          placeholder="e.g. 5 (splits into CGST 2.5% + SGST 2.5%)"
-          className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
-        />
-        <p className="text-xs text-slate-500 mt-1">
-          Split equally into CGST and SGST
-        </p>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-slate-400 mb-1">CGST Rate (%) <span className="text-red-400">*</span></label>
-          <input
-            type="text"
-            inputMode="decimal"
-            pattern="[0-9]*\.?[0-9]*"
-            value={form.cgst_rate || ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === '' || /^\d*\.?\d*$/.test(val)) update("cgst_rate", parseFloat(val) || 0);
-            }}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-slate-400 mb-1">SGST Rate (%) <span className="text-red-400">*</span></label>
-          <input
-            type="text"
-            inputMode="decimal"
-            pattern="[0-9]*\.?[0-9]*"
-            value={form.sgst_rate || ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === '' || /^\d*\.?\d*$/.test(val)) update("sgst_rate", parseFloat(val) || 0);
-            }}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
-        <button
-          type="button"
-          onClick={() => {
-            setModal(null);
-            setEditing(null);
-          }}
-          className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-medium disabled:opacity-50 transition-colors"
-        >
-          {loading ? "Saving..." : editing ? "Update" : "Add Tax"}
-        </button>
-      </div>
-    </form>
-  );
 
   return (
     <div className="space-y-6">
@@ -231,43 +117,26 @@ export default function Tax() {
           <table className="w-full text-sm">
             <thead className="bg-slate-800/80 text-slate-400">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">
-                  Country Code
-                </th>
+                <th className="text-left px-4 py-3 font-medium">Country Code</th>
                 <th className="text-left px-4 py-3 font-medium">State Code</th>
                 <th className="text-right px-4 py-3 font-medium">GST (%)</th>
                 <th className="text-right px-4 py-3 font-medium">CGST (%)</th>
                 <th className="text-right px-4 py-3 font-medium">SGST (%)</th>
-                <th className="text-right px-4 py-3 font-medium w-24">
-                  Actions
-                </th>
+                <th className="text-right px-4 py-3 font-medium w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
               {taxes.map((t) => (
                 <tr key={t.id} className="hover:bg-slate-800/40">
-                  <td className="px-4 py-3 font-mono text-slate-300">
-                    {t.country_code}
-                  </td>
-                  <td className="px-4 py-3 text-slate-400">
-                    {t.state_code || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right text-slate-300">
-                    {t.cgst_rate + t.sgst_rate || 0}%
-                  </td>
-                  <td className="px-4 py-3 text-right text-slate-300">
-                    {t.cgst_rate}%
-                  </td>
-                  <td className="px-4 py-3 text-right text-slate-300">
-                    {t.sgst_rate}%
-                  </td>
+                  <td className="px-4 py-3 font-mono text-slate-300">{t.country_code}</td>
+                  <td className="px-4 py-3 text-slate-400">{t.state_code || "—"}</td>
+                  <td className="px-4 py-3 text-right text-slate-300">{t.cgst_rate + t.sgst_rate || 0}%</td>
+                  <td className="px-4 py-3 text-right text-slate-300">{t.cgst_rate}%</td>
+                  <td className="px-4 py-3 text-right text-slate-300">{t.sgst_rate}%</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => {
-                          setEditing(t);
-                          setModal("edit");
-                        }}
+                        onClick={() => { setEditing(t); setModal("edit"); }}
                         className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-slate-200"
                         title="Edit"
                       >
@@ -288,21 +157,117 @@ export default function Tax() {
           </table>
         </div>
         {taxes.length === 0 && (
-          <p className="text-center py-12 text-slate-500">
-            No tax rates added yet
-          </p>
+          <p className="text-center py-12 text-slate-500">No tax rates added yet</p>
         )}
       </div>
 
       <Modal
         open={modal !== null}
-        onClose={() => {
-          setModal(null);
-          setEditing(null);
-        }}
+        onClose={() => { setModal(null); setEditing(null); }}
         title={editing ? "Edit Tax" : "Add Tax"}
       >
-        <TaxForm />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Country Code <span className="text-red-400">*</span></label>
+              <select
+                value={form.country_code}
+                onChange={(e) => update("country_code", e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
+              >
+                {COUNTRY_CODES.map((cc) => (
+                  <option key={cc} value={cc} className="bg-slate-800 text-slate-100">{cc}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">State Code <span className="text-red-400">*</span></label>
+              <select
+                value={form.state_code}
+                onChange={(e) => update("state_code", e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
+              >
+                <option value="" className="bg-slate-800 text-slate-500">— Select State —</option>
+                {form.country_code === "IN" &&
+                  INDIAN_STATES.map((st) => (
+                    <option key={st} value={st} className="bg-slate-800 text-slate-100">{st}</option>
+                  ))}
+                {form.country_code !== "IN" && (
+                  <option value={form.state_code || ""} className="bg-slate-800 text-slate-100">
+                    {form.state_code || "Custom"}
+                  </option>
+                )}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">GST Rate (%) <span className="text-red-400">*</span></label>
+            <input
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+              value={gstValue || ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || /^\d*\.?\d*$/.test(val)) updateGst(parseFloat(val) || 0);
+              }}
+              placeholder="e.g. 5 (splits into CGST 2.5% + SGST 2.5%)"
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
+            />
+            <p className="text-xs text-slate-500 mt-1">Split equally into CGST and SGST</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">CGST Rate (%) <span className="text-red-400">*</span></label>
+              <input
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
+                value={form.cgst_rate || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) update("cgst_rate", parseFloat(val) || 0);
+                }}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">SGST Rate (%) <span className="text-red-400">*</span></label>
+              <input
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
+                value={form.sgst_rate || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) update("sgst_rate", parseFloat(val) || 0);
+                }}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-colors"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+            <button
+              type="button"
+              onClick={() => { setModal(null); setEditing(null); }}
+              className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-medium disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Saving..." : editing ? "Update" : "Add Tax"}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

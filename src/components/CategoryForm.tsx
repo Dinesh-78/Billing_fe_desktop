@@ -79,22 +79,24 @@ export default function CategoryForm({ initialData, onSubmit, onCancel }: Catego
         </div>
       )}
       <div>
-        <label>Category Name *</label>
+        <label className="block text-sm font-medium text-slate-300 mb-1">Category Name *</label>
         <input
           type="text"
           value={form.name}
           onChange={(e) => update('name', e.target.value)}
           placeholder="e.g. Groceries"
           required
+          className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
         />
       </div>
       <div>
-        <label>Category Image (URL or path)</label>
+        <label className="block text-sm font-medium text-slate-300 mb-1">Category Image (URL or path)</label>
         <input
           type="text"
           value={form.image_path}
           onChange={(e) => update('image_path', e.target.value)}
           placeholder="https://... or file path"
+          className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
