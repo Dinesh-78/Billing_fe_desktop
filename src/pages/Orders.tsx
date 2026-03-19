@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Plus, Eye, Search, Printer } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Plus, Eye, Search, Printer, Mic } from 'lucide-react';
 import { db } from '@/lib/db';
 import TaxInvoicePrint from '@/components/TaxInvoicePrint';
 import type { Order } from '@/types';
@@ -14,6 +14,52 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [storeSettings, setStoreSettings] = useState<Record<string, string>>({});
   const [printOrder, setPrintOrder] = useState<(Order & { items?: import('@/types').OrderItem[] }) | null>(null);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const isManualStop = useRef(false);
+  const SpeechRecognition =
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+  const toggleVoiceSearch = () => {
+    if (listening && recognitionRef.current) {
+      isManualStop.current = true;
+      recognitionRef.current.stop();
+      setListening(false);
+      return;
+    }
+
+    if (!SpeechRecognition) {
+      alert("Speech Recognition not supported in this browser");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-IN";
+
+    isManualStop.current = false;
+
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setSearch(transcript);
+    };
+
+    recognition.onerror = () => {
+      setListening(false);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
+    recognition.start();
+    recognitionRef.current = recognition;
+    setListening(true);
+  };
 
   useEffect(() => {
     db.store.getSettings().then(setStoreSettings);
@@ -58,15 +104,23 @@ export default function Orders() {
         </button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
+      <div className="relative w-full max-w-md group">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-primary-400 transition-colors z-10 pointer-events-none" />
         <input
           type="text"
           placeholder="Search by customer..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-         className="w-full pl-9 pr-4 py-2 max-w-sm rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+          className="w-full pl-11 pr-10 py-2 bg-slate-800/80 hover:bg-slate-700/80 focus:bg-slate-900 border border-slate-700/60 hover:border-slate-600/80 focus:border-primary-500/50 rounded-full text-sm text-slate-200 placeholder-slate-400 transition-all duration-200 outline-none focus:ring-2 focus:ring-primary-500/20 shadow-[0_2px_10px_rgba(0,0,0,0.2)] focus:shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur-md relative"
         />
+        <button
+          type="button"
+          onClick={toggleVoiceSearch}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-colors z-10 ${listening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-slate-400 hover:text-primary-400 hover:bg-slate-700/50'}`}
+          title="Voice Search"
+        >
+          <Mic size={15} />
+        </button>
       </div>
 
       {loading ? (
@@ -184,7 +238,7 @@ export default function Orders() {
 
       {printOrder && printOrder.items && (
         <TaxInvoicePrint
-          order={printOrder}
+          order={printOrder as any}
           store={storeSettings}
           billNumber={`VL ${printOrder.id}`}
           onPrinted={() => setPrintOrder(null)}

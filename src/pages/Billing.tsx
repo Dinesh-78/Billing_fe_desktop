@@ -55,7 +55,7 @@ export default function Billing() {
   const isManualStop = useRef(false);
   const SpeechRecognition =
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
+
   useEffect(() => {
     db.products.getAll().then(setProducts);
     db.store.getSettings().then(setStoreSettings);
@@ -81,14 +81,14 @@ export default function Billing() {
       return;
     }
 
-    
+
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-IN"; // Indian English
 
-     isManualStop.current = false;
+    isManualStop.current = false;
 
     recognition.onresult = (event: any) => {
       let transcript = '';
@@ -103,11 +103,7 @@ export default function Billing() {
     };
 
     recognition.onend = () => {
-       if (!isManualStop.current) {
-      recognition.start();
-    } else {
       setListening(false);
-    }
     };
 
     recognition.start();
