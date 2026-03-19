@@ -107,7 +107,6 @@ function registerIpcHandlers() {
     const pdfPath = path.join(saveDir, safeName);
     const pdfBuffer = await printWindow.webContents.printToPDF({
       printBackground: true,
-      margins: { top: 10, bottom: 10, left: 10, right: 10 },
     });
     printWindow.close();
     if (!fs.existsSync(saveDir)) fs.mkdirSync(saveDir, { recursive: true });
