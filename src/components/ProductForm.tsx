@@ -103,62 +103,68 @@ export default function ProductForm({ categories, initialData, onSubmit, onCance
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label>Product Code *</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Product Code *</label>
           <input
             type="text"
             value={form.product_code}
             onChange={(e) => update('product_code', e.target.value)}
             placeholder="e.g. PRD001"
             required
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
           />
         </div>
         <div>
-          <label>Product Name *</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Product Name *</label>
           <input
             type="text"
             value={form.name}
             onChange={(e) => update('name', e.target.value)}
             placeholder="Product name"
             required
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
           />
         </div>
       </div>
       <div>
-        <label>Product Image (URL or file path)</label>
+        <label className="block text-sm font-medium text-slate-300 mb-1">Product Image (URL or file path)</label>
         <input
           type="text"
           value={form.image_path}
           onChange={(e) => update('image_path', e.target.value)}
           placeholder="https://... or file path"
+          className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label>Purchase Price (₹)</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Purchase Price (₹)</label>
           <input
             type="number"
             step="0.01"
             min="0"
             value={form.purchase_price || ''}
             onChange={(e) => update('purchase_price', parseFloat(e.target.value) || 0)}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
           />
         </div>
         <div>
-          <label>HSN Code</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">HSN Code</label>
           <input
             type="text"
             value={form.hsn_code}
             onChange={(e) => update('hsn_code', e.target.value)}
             placeholder="e.g. 1001"
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
           />
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label>Category *</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Category *</label>
           <select
             value={form.category_id}
             onChange={(e) => update('category_id', parseInt(e.target.value, 10))}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
           >
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
@@ -168,52 +174,57 @@ export default function ProductForm({ categories, initialData, onSubmit, onCance
           </select>
         </div>
         <div>
-          <label>Stock</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Stock</label>
           <input
             type="number"
             min="0"
             value={form.stock}
             onChange={(e) => update('stock', parseInt(e.target.value, 10) || 0)}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
           />
         </div>
       </div>
       <div>
-        <label>Low Stock Threshold</label>
+        <label className="block text-sm font-medium text-slate-300 mb-1">Low Stock Threshold</label>
         <input
           type="number"
           min="0"
           value={form.low_stock_threshold}
           onChange={(e) => update('low_stock_threshold', parseInt(e.target.value, 10) || 0)}
           placeholder="Notify when stock falls below"
+          className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
         />
         <p className="text-xs text-slate-500 mt-1">You'll get a notification when stock is at or below this value</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label>Selling Price (₹) *</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Selling Price (₹) *</label>
           <input
             type="number"
             step="0.01"
             min="0"
             value={form.selling_price || ''}
             onChange={(e) => update('selling_price', parseFloat(e.target.value) || 0)}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
           />
         </div>
         <div>
-          <label>MRP (₹)</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">MRP (₹)</label>
           <input
             type="number"
             step="0.01"
             min="0"
             value={form.mrp || ''}
             onChange={(e) => update('mrp', parseFloat(e.target.value) || 0)}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
           />
         </div>
         <div>
-          <label>GST Rate (%)</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">GST Rate (%)</label>
           <select
             value={form.gst_rate}
             onChange={(e) => update('gst_rate', parseFloat(e.target.value) || 0)}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
           >
             <option value={0}>0% (Exempt)</option>
             {taxes.map((t) => {

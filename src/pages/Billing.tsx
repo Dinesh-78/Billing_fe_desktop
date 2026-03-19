@@ -52,6 +52,7 @@ export default function Billing() {
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const isManualStop = useRef(false);
   const SpeechRecognition =
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
@@ -69,6 +70,7 @@ export default function Billing() {
 
   const toggleVoiceSearch = () => {
     if (listening && recognitionRef.current) {
+      isManualStop.current = true;
       recognitionRef.current.stop();
       setListening(false);
       return;
@@ -79,10 +81,14 @@ export default function Billing() {
       return;
     }
 
+    
+
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-IN"; // Indian English
+
+     isManualStop.current = false;
 
     recognition.onresult = (event: any) => {
       let transcript = '';
@@ -97,7 +103,11 @@ export default function Billing() {
     };
 
     recognition.onend = () => {
+       if (!isManualStop.current) {
+      recognition.start();
+    } else {
       setListening(false);
+    }
     };
 
     recognition.start();
@@ -183,7 +193,7 @@ export default function Billing() {
     (acc, i) => {
       const amount = i.quantity * i.rate;
       const gstAmt = amount * (i.product.gst_rate / 100);
-      const netAmt = amount + gstAmt;
+      const netAmt = amount;
       return {
         qty: acc.qty + i.quantity,
         amount: acc.amount + amount,
@@ -520,7 +530,7 @@ export default function Billing() {
               <tfoot className="bg-slate-800/95 border-t-2 border-slate-600 sticky bottom-0 z-20 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.2)]">
                 <tr className="text-slate-200 font-medium divide-x divide-slate-700">
                   <td colSpan={4} className="px-2 py-2">
-                    Totals ({netTotal.toFixed(2)})
+                    Totals
                   </td>
                   <td className="px-2 py-2 text-right">{totals.qty.toFixed(2)}</td>
                   <td className="px-2 py-2"></td>
