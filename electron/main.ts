@@ -114,6 +114,49 @@ function registerIpcHandlers() {
     await shell.openPath(pdfPath);
     return pdfPath;
   });
+
+  ipcMain.handle('get:printers', async () => {
+    if (mainWindow) {
+      return await mainWindow.webContents.getPrintersAsync();
+    }
+    return [];
+  });
+
+  ipcMain.handle('print:thermalReceipt', async (_, data: { html: string; printerName?: string }) => {
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: { nodeIntegration: false },
+    });
+    await printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(data.html));
+    await new Promise((r) => setTimeout(r, 500));
+
+    const printOptions: any = {
+      silent: true,
+      printBackground: true,
+      margins: { marginType: 'none' }
+    };
+    if (data.printerName) {
+      printOptions.deviceName = data.printerName;
+    }
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        printWindow.webContents.print(printOptions, (success: boolean, failureReason: string) => {
+          if (!success) {
+            console.error('Print failed:', failureReason);
+            reject(new Error(failureReason || 'Print failed'));
+          } else {
+            resolve();
+          }
+        });
+      });
+    } catch (err) {
+      console.error('Thermal print error:', err);
+    } finally {
+      printWindow.close();
+    }
+    return true;
+  });
 }
 
 function buildInvoiceHtml(data: { order: any; store: Record<string, string>; billNumber: string }): string {

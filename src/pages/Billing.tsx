@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Search, Banknote, Printer, Mic } from 'lucide-react';
+import { Plus, Trash2, Search, Banknote, Printer, Mic, Settings } from 'lucide-react';
 import { db } from '@/lib/db';
 import type { Product, Order } from '@/types';
 import TaxInvoicePrint from '@/components/TaxInvoicePrint';
+import ThermalReceiptPrint from '@/components/ThermalReceiptPrint';
 import { AdditionalCharge, BillingItem } from '@/types/Billingtypes';
 
 
@@ -46,8 +47,28 @@ export default function Billing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [printOrder, setPrintOrder] = useState<(Order & { items: (import('@/types').OrderItem & { hsn_code?: string; mrp?: number })[] }) | null>(null);
+  const [printOrderThermal, setPrintOrderThermal] = useState<(Order & { items: (import('@/types').OrderItem & { hsn_code?: string; mrp?: number })[] }) | null>(null);
   const [storeSettings, setStoreSettings] = useState<Record<string, string>>({});
   const [savedMessage, setSavedMessage] = useState(false);
+  const [printers, setPrinters] = useState<{name: string, isDefault: boolean}[]>([]);
+  const [selectedPrinter, setSelectedPrinter] = useState(() => localStorage.getItem('billing_thermalPrinter') || '');
+  const [showPrinterSettings, setShowPrinterSettings] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).db?.getPrinters) {
+      (window as any).db.getPrinters().then((list: any[]) => {
+        setPrinters(list);
+        if (!selectedPrinter && list.length > 0) {
+          const def = list.find(p => p.isDefault) || list[0];
+          setSelectedPrinter(def.name);
+        }
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('billing_thermalPrinter', selectedPrinter);
+  }, [selectedPrinter]);
   const [codeSearch, setCodeSearch] = useState('');
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -226,7 +247,7 @@ export default function Billing() {
     return true;
   };
 
-  const handleSave = async (andPrint: boolean) => {
+  const handleSave = async (printType: 'None' | 'A4' | 'Thermal') => {
     if (!validateAndGetItems()) return;
     setLoading(true);
     try {
@@ -248,9 +269,12 @@ export default function Billing() {
       setTown('');
       setPhone('');
       setTender(0);
-      if (andPrint) {
+      if (printType === 'A4') {
         const fullOrder = await db.orders.getById(order.id);
         if (fullOrder) setPrintOrder(fullOrder);
+      } else if (printType === 'Thermal') {
+        const fullOrder = await db.orders.getById(order.id);
+        if (fullOrder) setPrintOrderThermal(fullOrder);
       } else {
         setSavedMessage(true);
         setTimeout(() => setSavedMessage(false), 4000);
@@ -638,29 +662,57 @@ export default function Billing() {
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3 justify-end pt-4 border-t border-slate-700/50 mt-auto">
-            <button
-              type="button"
-              onClick={() => handleSave(false)}
-              disabled={loading || items.length === 0}
-              className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-medium disabled:opacity-50 flex items-center justify-center gap-2 flex-1 sm:flex-none"
-            >
-              <Banknote size={16} /> Save
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSave(true)}
-              disabled={loading || items.length === 0}
-              className="px-4 py-2 rounded-lg bg-primary-600/80 hover:bg-primary-500/80 text-white font-medium disabled:opacity-50 flex items-center justify-center gap-2 flex-1 sm:flex-none"
-            >
-              <Printer size={16} /> Save & Print
-            </button>
-            <button
-              type="button"
-              className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 flex justify-center flex-1 sm:flex-none"
-            >
-              Close
-            </button>
+          <div className="flex flex-col gap-4 pt-4 border-t border-slate-700/50 mt-auto">
+            {showPrinterSettings && printers.length > 0 && (
+              <div className="flex items-center justify-end gap-3 text-sm p-3 bg-slate-800/80 rounded-lg border border-slate-600">
+                <span className="text-slate-400">Default Thermal Printer:</span>
+                <select
+                  value={selectedPrinter}
+                  onChange={(e) => setSelectedPrinter(e.target.value)}
+                  className="bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-slate-200 outline-none focus:border-primary-500"
+                >
+                  <option value="">System Default</option>
+                  {printers.map(p => (
+                    <option key={p.name} value={p.name}>{p.name}</option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => setShowPrinterSettings(false)} className="text-primary-400 hover:text-primary-300 ml-2 font-medium">Done</button>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-3 justify-end items-center">
+              <button
+                type="button"
+                onClick={() => setShowPrinterSettings(!showPrinterSettings)}
+                className="p-2.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors"
+                title="Printer Settings"
+              >
+                <Settings size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSave('None')}
+                disabled={loading || items.length === 0}
+                className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-medium disabled:opacity-50 flex items-center justify-center gap-2 flex-1 sm:flex-none"
+              >
+                <Banknote size={16} /> Save Only
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSave('A4')}
+                disabled={loading || items.length === 0}
+                className="px-4 py-2 rounded-lg bg-primary-600/80 hover:bg-primary-500/80 text-white font-medium disabled:opacity-50 flex items-center justify-center gap-2 flex-1 sm:flex-none"
+              >
+                <Printer size={16} /> A4 Print
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSave('Thermal')}
+                disabled={loading || items.length === 0}
+                className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white font-medium disabled:opacity-50 flex items-center justify-center gap-2 flex-1 sm:flex-none"
+              >
+                <Printer size={16} /> Thermal Print
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -682,6 +734,16 @@ export default function Billing() {
           store={storeSettings}
           billNumber={billNumber.trim() ? billNumber : `VL ${printOrder.id}`}
           onPrinted={() => setPrintOrder(null)}
+        />
+      )}
+
+      {printOrderThermal && (
+        <ThermalReceiptPrint
+          order={printOrderThermal}
+          store={storeSettings}
+          billNumber={billNumber.trim() ? billNumber : `VL ${printOrderThermal.id}`}
+          printerName={selectedPrinter}
+          onPrinted={() => setPrintOrderThermal(null)}
         />
       )}
     </div>
