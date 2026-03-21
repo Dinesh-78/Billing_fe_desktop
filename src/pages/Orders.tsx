@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Plus, Eye, Search, Printer, Mic } from 'lucide-react';
 import { db } from '@/lib/db';
 import TaxInvoicePrint from '@/components/TaxInvoicePrint';
+import ThermalReceiptPrint from '@/components/ThermalReceiptPrint';
 import type { Order } from '@/types';
 import Modal from '@/components/Modal';
 import OrderForm from '@/components/OrderForm';
@@ -14,6 +15,8 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [storeSettings, setStoreSettings] = useState<Record<string, string>>({});
   const [printOrder, setPrintOrder] = useState<(Order & { items?: import('@/types').OrderItem[] }) | null>(null);
+  const [printOrderThermal, setPrintOrderThermal] = useState<(Order & { items?: import('@/types').OrderItem[] }) | null>(null);
+  const [selectedPrinter] = useState(() => localStorage.getItem('billing_thermalPrinter') || '');
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const isManualStop = useRef(false);
@@ -148,13 +151,25 @@ export default function Orders() {
                       ₹{o.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleView(o)}
-                        className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
-                        title="View"
-                      >
-                        <Eye size={16} />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleView(o)}
+                          className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+                          title="View"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const full = await db.orders.getById(o.id);
+                            if (full) setPrintOrderThermal(full);
+                          }}
+                          className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+                          title="Thermal Print"
+                        >
+                          <Printer size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -223,13 +238,20 @@ export default function Orders() {
                 </table>
               </div>
             )}
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end gap-3 pt-4">
               <button
                 onClick={() => selectedOrder && setPrintOrder(selectedOrder)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-medium"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 font-medium transition-colors"
               >
                 <Printer size={16} />
-                Print / Save PDF
+                A4 Print
+              </button>
+              <button
+                onClick={() => selectedOrder && setPrintOrderThermal(selectedOrder)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-medium transition-colors"
+              >
+                <Printer size={16} />
+                Thermal Print
               </button>
             </div>
           </div>
@@ -242,6 +264,16 @@ export default function Orders() {
           store={storeSettings}
           billNumber={`VL ${printOrder.id}`}
           onPrinted={() => setPrintOrder(null)}
+        />
+      )}
+
+      {printOrderThermal && printOrderThermal.items && (
+        <ThermalReceiptPrint
+          order={printOrderThermal as any}
+          store={storeSettings}
+          billNumber={`VL ${printOrderThermal.id}`}
+          printerName={selectedPrinter}
+          onPrinted={() => setPrintOrderThermal(null)}
         />
       )}
     </div>

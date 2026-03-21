@@ -123,39 +123,49 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('print:thermalReceipt', async (_, data: { html: string; printerName?: string }) => {
+    console.log('Main: Starting thermal print process...', { printerName: data.printerName });
     const printWindow = new BrowserWindow({
       show: false,
-      webPreferences: { nodeIntegration: false },
+      webPreferences: { 
+        nodeIntegration: false,
+        contextIsolation: true
+      },
     });
-    await printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(data.html));
-    await new Promise((r) => setTimeout(r, 500));
-
-    const printOptions: any = {
-      silent: true,
-      printBackground: true,
-      margins: { marginType: 'none' }
-    };
-    if (data.printerName) {
-      printOptions.deviceName = data.printerName;
-    }
 
     try {
-      await new Promise<void>((resolve, reject) => {
+      console.log('Main: Loading receipt HTML...');
+      await printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(data.html));
+      
+      console.log('Main: HTML loaded, waiting 500ms for styles...');
+      await new Promise((r) => setTimeout(r, 500));
+
+      const printOptions: any = {
+        silent: true,
+        printBackground: true,
+        margins: { marginType: 'none' }
+      };
+
+      if (data.printerName) {
+        printOptions.deviceName = data.printerName;
+      }
+
+      console.log('Main: Triggering print with options:', printOptions);
+      return await new Promise((resolve) => {
         printWindow.webContents.print(printOptions, (success: boolean, failureReason: string) => {
+          console.log('Main: Print finished. Success:', success, 'Reason:', failureReason);
           if (!success) {
-            console.error('Print failed:', failureReason);
-            reject(new Error(failureReason || 'Print failed'));
+            resolve({ success: false, error: failureReason });
           } else {
-            resolve();
+            resolve({ success: true });
           }
+          if (!printWindow.isDestroyed()) printWindow.close();
         });
       });
     } catch (err) {
-      console.error('Thermal print error:', err);
-    } finally {
-      printWindow.close();
+      console.error('Main: Thermal print error:', err);
+      if (!printWindow.isDestroyed()) printWindow.close();
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
-    return true;
   });
 }
 
