@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
 import renderer from 'vite-plugin-electron-renderer';
 import path from 'path';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
   plugins: [
@@ -36,6 +37,7 @@ export default defineConfig({
       },
     ]),
     renderer(),
+    nodePolyfills(),
   ],
   resolve: {
     alias: {

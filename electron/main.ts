@@ -19,6 +19,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: false,
     },
     show: false,
     titleBarStyle: 'default',
@@ -36,19 +37,16 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Grant microphone permission so SpeechRecognition works in the renderer
-  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
-    if (permission === 'media') {
-      callback(true);
-    } else {
-      callback(false);
-    }
-  });
+    session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+  const allowed = ['media', 'audioCapture', 'videoCapture', 'speech-recognition'];
+  callback(allowed.includes(permission));
+});
 
-  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
-    if (permission === 'media') return true;
-    return false;
-  });
+session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+  const allowed = ['media', 'audioCapture', 'videoCapture', 'speech-recognition'];
+  if (allowed.includes(permission)) return true;
+  return null;
+});
 }
 
 async function initApp() {
@@ -242,6 +240,10 @@ function buildInvoiceHtml(data: { order: any; store: Record<string, string>; bil
 }
 
 app.whenReady().then(initApp).then(createWindow);
+
+app.commandLine.appendSwitch('enable-features', 'WebSpeechAPI');
+app.commandLine.appendSwitch('allow-file-access-from-files');
+app.commandLine.appendSwitch('disable-web-security');
 
 app.on('window-all-closed', () => {
   if (typeof db !== 'undefined') db.close();

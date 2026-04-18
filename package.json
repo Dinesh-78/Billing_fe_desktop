@@ -11,20 +11,24 @@
     "dist": "vite build && electron-builder"
   },
   "dependencies": {
+    "@aws-sdk/client-transcribe-streaming": "^3.1029.0",
+    "@openrouter/sdk": "^0.11.2",
     "better-sqlite3": "^11.6.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.468.0",
+    "microphone-stream": "^6.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.0.1"
+    "react-router-dom": "^7.0.1",
+    "vite-plugin-node-polyfills": "^0.26.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^22.10.1",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "electron": "^33.2.1",

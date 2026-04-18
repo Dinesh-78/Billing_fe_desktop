@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Search, Banknote, Printer, Mic, Settings } from 'lucide-react';
+import { Plus, Trash2, Search, Banknote, Printer, Mic, Settings, Loader2 } from 'lucide-react';
 import { db } from '@/lib/db';
 import type { Product, Order } from '@/types';
 import TaxInvoicePrint from '@/components/TaxInvoicePrint';
 import ThermalReceiptPrint from '@/components/ThermalReceiptPrint';
 import { AdditionalCharge, BillingItem } from '@/types/Billingtypes';
+import { transcribeAudio } from '@/lib/voiceTranscription';
+import { streamTranscribe } from '@/lib/awsTranscribe';
 
 
 
@@ -53,7 +55,11 @@ export default function Billing() {
   const [printers, setPrinters] = useState<{name: string, isDefault: boolean}[]>([]);
   const [selectedPrinter, setSelectedPrinter] = useState(() => localStorage.getItem('billing_thermalPrinter') || '');
   const [showPrinterSettings, setShowPrinterSettings] = useState(false);
-
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const transcribeCleanupRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).db?.getPrinters) {
       (window as any).db.getPrinters().then((list: any[]) => {
@@ -70,12 +76,7 @@ export default function Billing() {
     localStorage.setItem('billing_thermalPrinter', selectedPrinter);
   }, [selectedPrinter]);
   const [codeSearch, setCodeSearch] = useState('');
-  const [listening, setListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const isManualStop = useRef(false);
-  const SpeechRecognition =
-    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
   useEffect(() => {
     db.products.getAll().then(setProducts);
@@ -89,48 +90,51 @@ export default function Billing() {
     }
   }, [items.length]);
 
-  const toggleVoiceSearch = () => {
-    if (listening && recognitionRef.current) {
-      isManualStop.current = true;
-      recognitionRef.current.stop();
-      setListening(false);
-      return;
+const toggleVoiceSearch = async () => {
+  // ── STOP ─────────────────────────────────────────────
+  if (isRecording) {
+    if (transcribeCleanupRef.current) {
+      transcribeCleanupRef.current();
+      transcribeCleanupRef.current = null;
     }
+    setIsRecording(false);
+    return;
+  }
 
-    if (!SpeechRecognition) {
-      alert("Speech Recognition not supported in this browser");
-      return;
-    }
+  // ── START ────────────────────────────────────────────
+  try {
+    setIsTranscribing(true); // Show loader while initializing
+    setError('');
 
-
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-IN"; // Indian English
-
-    isManualStop.current = false;
-
-    recognition.onresult = (event: any) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+    const cleanup = await streamTranscribe(
+      (transcript, isFinal) => {
+        // We can keep isTranscribing false here as it's already set below
+        if (transcript) {
+          setSearch(transcript.trim());
+        }
+      },
+      (err) => {
+        setError("AWS Transcribe Error: " + err.message);
+        setIsRecording(false);
+        setIsTranscribing(false);
       }
-      setSearch(transcript);
-    };
+    );
 
-    recognition.onerror = () => {
-      setListening(false);
-    };
+    transcribeCleanupRef.current = cleanup;
+    setIsRecording(true);
+    setIsTranscribing(false); // Setup done, clear loader
+  } catch (err: any) {
+    console.error('Mic error:', err);
+    setError(err.message || 'Could not access microphone or AWS Transcribe.');
+    setTimeout(() => setError(''), 5000);
+    setIsTranscribing(false);
+    setIsRecording(false);
+  }
+};
 
-    recognition.onend = () => {
-      setListening(false);
-    };
 
-    recognition.start();
-    recognitionRef.current = recognition;
-    setListening(true);
-  };
+
+  
 
   const filtered = products.filter(
     (p) =>
@@ -303,14 +307,21 @@ export default function Billing() {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-11 pr-10 py-2 bg-slate-800/80 hover:bg-slate-700/80 focus:bg-slate-900 border border-slate-700/60 hover:border-slate-600/80 focus:border-primary-500/50 rounded-full text-sm text-slate-200 placeholder-slate-400 transition-all duration-200 outline-none focus:ring-2 focus:ring-primary-500/20 shadow-[0_2px_10px_rgba(0,0,0,0.2)] focus:shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur-md relative"
             />
-            <button
-              type="button"
-              onClick={toggleVoiceSearch}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-colors z-10 ${listening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-slate-400 hover:text-primary-400 hover:bg-slate-700/50'}`}
-              title="Voice Search"
-            >
-              <Mic size={15} />
-            </button>
+  <button
+  type="button"
+  onClick={toggleVoiceSearch}
+  disabled={isTranscribing && !isRecording}
+  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-colors z-10 ${
+    isRecording
+      ? 'bg-red-500/20 text-red-500 animate-pulse'
+      : isTranscribing
+      ? 'bg-primary-500/20 text-primary-400'
+      : 'text-slate-400 hover:text-primary-400 hover:bg-slate-700/50'
+  }`}
+  title={isRecording ? 'Stop listening' : isTranscribing ? 'Initializing...' : 'Voice Search'}
+>
+  {isTranscribing ? <Loader2 size={15} className="animate-spin" /> : <Mic size={15} />}
+</button>
           </div>
         </div>
 

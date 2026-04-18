@@ -41,6 +41,10 @@ const api = {
   },
 };
 
+contextBridge.exposeInMainWorld('electronAPI', {
+  saveRecording: (buffer: any) => ipcRenderer.invoke('save-recording', buffer)
+})
+
 contextBridge.exposeInMainWorld('db', api);
 
 export type DbApi = typeof api;
