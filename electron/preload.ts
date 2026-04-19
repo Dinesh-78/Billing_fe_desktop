@@ -30,7 +30,7 @@ const api = {
     updateSetting: (key: string, value: string) => ipcRenderer.invoke('db:store:updateSetting', key, value),
   },
   getPrinters: () => ipcRenderer.invoke('get:printers'),
-  printThermalReceipt: (data: { html: string; printerName?: string }) => ipcRenderer.invoke('print:thermalReceipt', data),
+  printThermalReceipt: (data: { data: any[]; printerName?: string }) => ipcRenderer.invoke('print:thermalReceipt', data),
   printInvoiceToPdf: (data: { order: object; store: Record<string, string>; billNumber: string }) =>
     ipcRenderer.invoke('print:invoiceToPdf', data),
   taxes: {

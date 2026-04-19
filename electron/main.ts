@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { DatabaseService } from './database';
+import { PosPrinter } from 'electron-pos-printer';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow: BrowserWindow | null = null;
@@ -120,48 +121,24 @@ function registerIpcHandlers() {
     return [];
   });
 
-  ipcMain.handle('print:thermalReceipt', async (_, data: { html: string; printerName?: string }) => {
-    console.log('Main: Starting thermal print process...', { printerName: data.printerName });
-    const printWindow = new BrowserWindow({
-      show: false,
-      webPreferences: { 
-        nodeIntegration: false,
-        contextIsolation: true
-      },
-    });
-
+  ipcMain.handle('print:thermalReceipt', async (_, payload: { data: any[]; printerName?: string }) => {
+    console.log('Main: Starting thermal print process with pos-printer...', { printerName: payload.printerName });
     try {
-      console.log('Main: Loading receipt HTML...');
-      await printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(data.html));
-      
-      console.log('Main: HTML loaded, waiting 500ms for styles...');
-      await new Promise((r) => setTimeout(r, 500));
-
-      const printOptions: any = {
-        silent: true,
-        printBackground: true,
-        margins: { marginType: 'none' }
+      const options = {
+        preview: false,
+        margin: '0 0 0 0',
+        copies: 1,
+        printerName: payload.printerName || undefined,
+        timeOutPerLine: 400,
+        pageSize: '80mm' as any, // page size
+        silent: true
       };
 
-      if (data.printerName) {
-        printOptions.deviceName = data.printerName;
-      }
-
-      console.log('Main: Triggering print with options:', printOptions);
-      return await new Promise((resolve) => {
-        printWindow.webContents.print(printOptions, (success: boolean, failureReason: string) => {
-          console.log('Main: Print finished. Success:', success, 'Reason:', failureReason);
-          if (!success) {
-            resolve({ success: false, error: failureReason });
-          } else {
-            resolve({ success: true });
-          }
-          if (!printWindow.isDestroyed()) printWindow.close();
-        });
-      });
+      await PosPrinter.print(payload.data, options);
+      console.log('Main: Print finished successfully');
+      return { success: true };
     } catch (err) {
       console.error('Main: Thermal print error:', err);
-      if (!printWindow.isDestroyed()) printWindow.close();
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
   });
